@@ -1,2 +1,38 @@
 #!/usr/bin/env python
 
+import os
+import requests
+import sys
+
+def check_build_status(repo):
+    headers = {"Authorization": f"Bearer {os.environ.get('GITHUB_TOKEN')}"}
+    url = f"https://api.github.com/repos/%7Brepo%7D/actions/runs"
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    data = response.json()
+    last_run = data["workflow_runs"][0]
+    if last_run["status"] == "completed":
+        if last_run["conclusion"] == "success":
+            return 0
+        else:
+            return 1
+    else:
+        return None
+
+if name == "main":
+    if len(sys.argv) < 2:
+        print("Usage: gitbuildcheck user/repo [--shame]")
+        sys.exit(1)
+    repo = sys.argv[1]
+    shame = "--shame" in sys.argv
+    status = check_build_status(repo)
+    if status is None:
+        print("No build found")
+        sys.exit(1)
+    elif status == 0:
+        print("Build succeeded")
+    else:
+        print("Build failed")
+        if shame:
+            os.system("sh runsiren.sh")
+   
